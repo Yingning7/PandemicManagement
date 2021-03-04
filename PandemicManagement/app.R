@@ -119,15 +119,15 @@ server <- function(input, output, session) {
       val4<-input$q2d
       if(input$selectiond==1){
         updateSliderInput(session, "a", value = 4,
-                          min = 0, max = (1/((1-val1)*(1-val3)))-0.1, step = 0.1)
+                          min = 0, max = round((1/((1-val1)*(1-val3)))-0.1,digits = 2), step = 0.1)
         
         updateSliderInput(session, "b", value = 4,
-                          min = 0, max = (1/(val2*val4))-0.1, step = 0.1)}
+                          min = 0, max = round((1/(val2*val4))-0.1,digits = 2), step = 0.1)}
       if(input$selectiond==2){
         updateSliderInput(session, "a", value = 4, min = 0,
-                          max = (1/(val1*val3))-0.1, step = 0.1)
+                          max = round((1/(val1*val3))-0.1,digits = 2), step = 0.1)
         updateSliderInput(session, "b", value = 4,
-                          min = 0, max = (1/((1-val2)*(1-val4)))-0.1, step = 0.1)
+                          min = 0, max = round((1/((1-val2)*(1-val4)))-0.1,digits = 2), step = 0.1)
       }})
     ppvd_res1<-function(pid){(pid*(1-input$a*(1-input$p1d)*(1-input$p2d)))/(pid*(1-input$a*
                                                                                    (1-input$p1d)*(1-input$p2d))+(1-pid)*(1-input$b*input$q1d*input$q2d))}
