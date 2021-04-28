@@ -5,7 +5,7 @@ ui <- fluidPage(
 
     navbarPage(
         "Pandemic Management",
-        tabPanel("Independent",
+        tabPanel("Two Tests Independent",
                  sidebarPanel(
                     selectInput("selection", 
                                 h5("Choose a scenario"),
@@ -39,7 +39,7 @@ ui <- fluidPage(
            plotOutput("npv")
         )
         ),
-        tabPanel("Dependent",
+        tabPanel("Two Tests Dependent",
                  sidebarPanel(
                      selectInput("selectiond", 
                                  h5("Choose a scenario"),
@@ -75,7 +75,45 @@ ui <- fluidPage(
                      plotOutput("npvd")
                  )
                      
-                 )
+                 ),
+        tabPanel(
+          "More Combined Tests",
+          sidebarPanel(
+            selectInput("selectionm", 
+                        h5("Choose a scenario"),
+                        choices = list("Believe the Positive(BP)"=1, 
+                                       "Believe the Negative(BN)"=2)
+            ),
+            numericInput("num", label = h5("Input the number of weeks"), value = 1, step = 1),
+            sliderInput("p1m", 
+                        h5("Sensitivity of Test 1:"),
+                        min = 0, max = 1, value = 0.5, step = 0.01),
+            
+            sliderInput("q1m", 
+                        h5("Specificity of Test 1:"),
+                        min = 0, max = 1, value = 0.5, step = 0.01),
+            sliderInput("p2m", 
+                        h5("Sensitivity of Test 2:"),
+                        min = 0, max = 1, value = 0.5, step = 0.01),
+            sliderInput("q2m", 
+                        h5("Specificity of Test 2:"),
+                        min = 0, max = 1, value = 0.5, step = 0.01),
+            
+            sliderInput("pim", 
+                        h5("Range of prevalence"),
+                        min = 0, max = 1, value = 0.5, step = 0.1
+            ),
+            sliderInput("am",
+                        h5("Dependent variable a:"),
+                        min= 0, max = 10000, value = 4,  step = 0.1),
+            sliderInput("bm",
+                        h5("Dependent variable b:"),
+                        min = 0, max = 10000, value = 4,  step = 0.1)),
+          mainPanel(
+            plotOutput("ppvm"),
+            plotOutput("npvm")
+          )
+        )
                  )
     )
 
@@ -93,10 +131,7 @@ server <- function(input, output, session) {
     npv_res2<-function(pi){(1-pi)*(input$q1+input$q2*(1-input$q1))/((1-pi)*
                         (input$q1+input$q2*(1-input$q1))+pi*(1-input$p1*input$p2))}
     
-    #tpr1<-1-input$a*(1-input$p1)*(1-input$p2)
-    #fpr1<-1-input$b*input$q1*input$q2
-    #tpr2<-input$a*input$p1*input$p2
-    #fpr2<-input$b*(1-input$q1)*(1-input$q2
+    
     
     getPPV<-function(pi){
         if(input$selection==1){
@@ -127,7 +162,22 @@ server <- function(input, output, session) {
         updateSliderInput(session, "a", value = 4, min = 0,
                           max = round((1/(val1*val3))-0.1,digits = 2), step = 0.1)
         updateSliderInput(session, "b", value = 4,
-                          min = 0, max = round((1/((1-val2)*(1-val4)))-0.1,digits = 2), step = 0.1)
+                          min = 0, max = round((1/((1-val2)*(1-val4)))-0.1,digits = 2), step = 0.1)}
+        v1<-input$p1m
+        v2<-input$q1m
+        v3<-input$p2m
+        v4<-input$q2m
+        if(input$selectionm==1){
+          updateSliderInput(session, "am", value = 4,
+                            min = 0, max = round((1/((1-v1)*(1-v3)))-0.1,digits = 2), step = 0.1)
+          
+          updateSliderInput(session, "bm", value = 4,
+                            min = 0, max = round((1/(v2*v4))-0.1,digits = 2), step = 0.1)}
+        if(input$selectionm==2){
+          updateSliderInput(session, "am", value = 4, min = 0,
+                            max = round((1/(v1*v3))-0.1,digits = 2), step = 0.1)
+          updateSliderInput(session, "bm", value = 4,
+                            min = 0, max = round((1/((1-v2)*(1-v4)))-0.1,digits = 2), step = 0.1)
       }})
     ppvd_res1<-function(pid){(pid*(1-input$a*(1-input$p1d)*(1-input$p2d)))/(pid*(1-input$a*
                                                                                    (1-input$p1d)*(1-input$p2d))+(1-pid)*(1-input$b*input$q1d*input$q2d))}
@@ -151,30 +201,65 @@ server <- function(input, output, session) {
             npvd_res<-npvd_res2(pid)
         }
     }
+    ppvm_res1<-function(pim){(pim*(1-(input$am*(1-input$p1m)*(1-input$p2m))^input$num))/(pim*(1-(input$am*
+                                (1-input$p1m)*(1-input$p2m))^input$num)+(1-pim)*(1-(input$bm*input$q1m*input$q2m)^input$num))}
+    npvm_res1<-function(pim){((1-pim)*(input$bm*input$q1m*input$q2m)^input$num)/((1-pim)*(input$bm*input$q1m*
+                                input$q2m)^input$num+pim*(input$am*(1-input$p1m)*(1-input$p2m))^input$num)}
+    ppvm_res2<-function(pim){(pim*(input$am*input$p1m*input$p2m)^input$num)/(pim*(input$am*input$p1m*input$p2m)^input$num+
+                                (1-pim)*(input$bm*(1-input$q1m)*(1-input$q2m))^input$num)}
+    npvm_res2<-function(pim){((1-pim)*(1-(input$bm*(1-input$q1m)*(1-input$q2m))^input$num))/((1-pim)*(1-(input$bm*
+                                (1-input$q1m)*(1-input$q2m))^input$num)+pim*(1-(input$am*input$p1m*input$p2m)^input$num))}
+    getPPVM<-function(pim){
+      if(input$selectionm==1){
+        ppvm_res<-ppvm_res1(pim)
+      }else if(input$selectionm==2){
+        ppvm_res<-ppvm_res2(pim)
+      }
+    }
+    getNPVM<-function(pim){
+      if(input$selectionm==1){
+        npvm_res<-npvm_res1(pim)
+      }else if(input$selectionm==2){
+        npvm_res<-npvm_res2(pim)
+      }
+    }
     output$ppv <- renderPlot(
         curve(getPPV, from = 0, to = input$pi, n = 101, add = FALSE, 
               type = "l", xname = "x", xlab = "prevalence",  log = NULL, 
-              xlim = NULL, ylim = c(0,1), main = "Combined positive predictive values
+              xlim = NULL, ylim = c(0,1), main = "Overall positive predictive values
           as a function of prevalence (independent case)")
     )
     output$npv <- renderPlot(
         curve(getNPV, from = 0, to = input$pi, n = 101, add = FALSE, 
               type = "l", xname = "x", xlab = "prevalence",  log = NULL, 
-              xlim = NULL, ylim = c(0,1), main = "Combined negative predictive values 
+              xlim = NULL, ylim = c(0,1), main = "Overall negative predictive values 
           as a function of prevalence (independent case)")
     )
     output$ppvd <- renderPlot(
         curve(getPPVD, from = 0, to = input$pid, n = 101, add = FALSE, 
               type = "l", xname = "x", xlab = "prevalence",  log = NULL, 
-              xlim = NULL, ylim = c(0,1), main = "Combined positive predictive values 
+              xlim = NULL, ylim = c(0,1), main = "Overall positive predictive values 
               as a function of prevalence (dependent case)")
     )
     output$npvd <- renderPlot(
         curve(getNPVD, from = 0, to = input$pid, n = 101, add = FALSE, 
               type = "l", xname = "x", xlab = "prevalence",  log = NULL, 
-              xlim = NULL, ylim = c(0,1), main = "Combined negative predictive values
+              xlim = NULL, ylim = c(0,1), main = "Overall negative predictive values
           as a function of prevalence (dependent case)")
     )
+    output$ppvm <- renderPlot(
+      curve(getPPVM, from = 0, to = input$pim, n = 101, add = FALSE, 
+            type = "l", xname = "x", xlab = "prevalence",  log = NULL, 
+            xlim = NULL, ylim = c(0,1), main = "Overall positive predictive values 
+              as a function of prevalence (dependent case)")
+    )
+    output$npvm <- renderPlot(
+      curve(getNPVM, from = 0, to = input$pim, n = 101, add = FALSE, 
+            type = "l", xname = "x", xlab = "prevalence",  log = NULL, 
+            xlim = NULL, ylim = c(0,1), main = "Overall negative predictive values
+          as a function of prevalence (dependent case)")
+    )
+   
 }
 
 
